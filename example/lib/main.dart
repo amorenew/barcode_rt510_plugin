@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:barcode_rt510_plugin/barcode_rt510_plugin.dart';
-import 'package:barcode_rt510_plugin/tag_epc.dart';
 
 void main() => runApp(MyApp());
 
@@ -14,12 +13,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  bool _isStarted = false;
-  bool _isEmptyTags = false;
-  bool _isConnected = false;
-  TextEditingController powerLevelController =
-      TextEditingController(text: '26');
-  TextEditingController workAreaController = TextEditingController(text: '1');
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +29,9 @@ class _MyAppState extends State<MyApp> {
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
-    BarcodeRT510Plugin.connectedStatusStream
+    BarcodeRT510Plugin.barcodeStatusStream
         .receiveBroadcastStream()
-        .listen(updateIsConnected);
-    BarcodeRT510Plugin.tagsStatusStream.receiveBroadcastStream().listen(updateTags);
-    await BarcodeRT510Plugin.connect;
+        .listen(updateBarcodes);
     // If the widget was removed from the tree while the asynchronous platform
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
@@ -50,18 +42,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  List<TagEpc> _data = [];
-  void updateTags(dynamic result) {
+  List<String> _data = [];
+  void updateBarcodes(dynamic result) {
     setState(() {
-      _data = TagEpc.parseTags(result);
+      _data.add(result);
     });
   }
 
-  void updateIsConnected(dynamic isConnected) {
-    //setState(() {
-    _isConnected = isConnected;
-    //});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,29 +107,26 @@ class _MyAppState extends State<MyApp> {
                       ),
                       color: Colors.blueAccent,
                       child: Text(
-                        'Call Start',
+                        'Call Scan Single',
                         style: TextStyle(color: Colors.white),
                       ),
                       onPressed: () async {
-                        await BarcodeRT510Plugin.start;
+                        await BarcodeRT510Plugin.scanSingle;
                       }),
-                  /* RaisedButton(
-                      child: Text('Call isStarted'),
+                  RaisedButton(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18.0),
+                      ),
+                      color: Colors.blueAccent,
+                      child: Text(
+                        'Call Scan Continuous',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       onPressed: () async {
-                        bool isStarted = await BarcodeRT510Plugin.isStarted;
-                        setState(() {
-                          this._isStarted = isStarted;
-                        });
-                      }),*/
+                        await BarcodeRT510Plugin.scanContinuous;
+                      }),
                 ],
               ),
-              /*Text(
-                'Barcode Reader isStarted:$_isStarted',
-                style: TextStyle(color: Colors.blue.shade800),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[*/
               RaisedButton(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18.0),
@@ -155,16 +139,6 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () async {
                     await BarcodeRT510Plugin.stop;
                   }),
-              /*   RaisedButton(
-                      child: Text('Call Close'),
-                      onPressed: () async {
-                        await BarcodeRT510Plugin.close;
-                      }),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[*/
               RaisedButton(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18.0),
@@ -180,95 +154,20 @@ class _MyAppState extends State<MyApp> {
                       _data = [];
                     });
                   }),
-              /* RaisedButton(
-                      child: Text('Call is Empty Tags'),
-                      onPressed: () async {
-                        bool isEmptyTags = await BarcodeRT510Plugin.isEmptyTags;
-                        setState(() {
-                          this._isEmptyTags = isEmptyTags;
-                        });
-                      }),
-                ],
-              ),
-              Text(
-                'Barcode Reader isEmptyTags:$_isEmptyTags',
-                style: TextStyle(color: Colors.blue.shade800),
-              ),*/
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  Container(
-                    width: 100,
-                    child: TextFormField(
-                      controller: powerLevelController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(labelText: 'Power Level'),
-                    ),
-                  ),
-                  RaisedButton(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.0),
-                      ),
-                      color: Colors.green,
-                      child: Text(
-                        'Set Power Level',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        await BarcodeRT510Plugin.setPowerLevel(
-                            powerLevelController.text);
-                      }),
-                ],
-              ),
-              Text(
-                'powers {"26dbm", "24", "20", "18", "17", "16"}',
-                style: TextStyle(color: Colors.blue.shade800, fontSize: 12),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  Container(
-                    width: 100,
-                    child: TextFormField(
-                      controller: workAreaController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(labelText: 'Work Area'),
-                    ),
-                  ),
-                  RaisedButton(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.0),
-                      ),
-                      color: Colors.green,
-                      child: Text(
-                        'Set Work Area',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        await BarcodeRT510Plugin.setWorkArea(workAreaController.text);
-                      }),
-                ],
-              ),
-              Text(
-                'Work Area 1 China2 - 2 USA - 3 Europe - 4 China1 - 5 Korea',
-                style: TextStyle(color: Colors.blue.shade800, fontSize: 12),
-              ),
               Container(
                 width: double.infinity,
                 height: 2,
                 margin: EdgeInsets.symmetric(vertical: 8),
                 color: Colors.blueAccent,
               ),
-              ..._data.map((TagEpc tag) => Card(
+              ..._data.map((String barcode) => Card(
                     color: Colors.blue.shade50,
                     child: Container(
                       width: 330,
                       alignment: Alignment.center,
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        'Tag ${tag.epc} Count:${tag.count}',
+                        'Barcode $barcode',
                         style: TextStyle(color: Colors.blue.shade800),
                       ),
                     ),

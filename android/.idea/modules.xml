@@ -3,8 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/android-barcode_plugin.iml" filepath="$PROJECT_DIR$/android-barcode_plugin.iml" group="barcode_plugin" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.amorenew.rt510.barcode_plugin-barcode_plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/com.amorenew.rt510.barcode_plugin-barcode_plugin.iml" group="barcode_plugin" />
       <module fileurl="file://$PROJECT_DIR$/barcode_plugin.iml" filepath="$PROJECT_DIR$/barcode_plugin.iml" group="barcode_plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/barcode_rt510_plugin-android-barcode_plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/barcode_rt510_plugin-android-barcode_plugin.iml" group="barcode_plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.amorenew.rt510.barcode_plugin-barcode_plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/com.amorenew.rt510.barcode_plugin-barcode_plugin.iml" group="barcode_plugin" />
     </modules>
   </component>
 </project>

@@ -1,7 +1,7 @@
 package com.amorenew.rt510.barcode_plugin;
 
-import com.handheld.BarcodeHelper;
-import com.handheld.BarcodeListener;
+import com.amorenew.rt510.barcode_plugin.helpers.BarcodeHelper;
+import com.amorenew.rt510.barcode_plugin.helpers.BarcodeListener;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
@@ -23,46 +23,15 @@ import io.reactivex.subjects.PublishSubject;
  */
 public class BarcodePlugin implements FlutterPlugin, MethodCallHandler {
 
-    private static final String CHANNEL_IsStarted = "isStarted";
-    private static final String CHANNEL_Start = "start";
+    private static final String CHANNEL_ScanSingle = "scanSingle";
+    private static final String CHANNEL_ScanContinuous = "scanContinuous";
     private static final String CHANNEL_Stop = "stop";
     private static final String CHANNEL_ClearData = "clearData";
-    private static final String CHANNEL_IsEmptyTags = "isEmptyTags";
-    private static final String CHANNEL_Close = "close";
-    private static final String CHANNEL_Connect = "connect";
-    private static final String CHANNEL_IsConnected = "isConnected";
-    private static final String CHANNEL_SETPOWERLEVEL = "setPowerLevel";
-    private static final String CHANNEL_SETWORKAREA = "setWorkArea";
-
-    private static PublishSubject<Boolean> connectedStatus = PublishSubject.create();
-    private static PublishSubject<String> tagsStatus = PublishSubject.create();
-    private static final String CHANNEL_ConnectedStatus = "ConnectedStatus";
-    private static final String CHANNEL_TagsStatus = "TagsStatus";
-
-
-    @Override
-    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "barcode_plugin");
-        initConnectedEvent(flutterPluginBinding.getBinaryMessenger());
-        initReadEvent(flutterPluginBinding.getBinaryMessenger());
-
-        channel.setMethodCallHandler(new BarcodePlugin());
-        BarcodeHelper.getInstance().init(new BarcodeListener() {
-            @Override
-            public void onRead(String tagsJson) {
-//                for (Map<String, Object> map : tagsList) {
-//                    String tag = TagKey.getTag(map);
-                if (tagsJson != null)
-                    tagsStatus.onNext(tagsJson);
-//                }
-            }
-
-            @Override
-            public void onConnect(boolean isConnected, int powerLevel) {
-                connectedStatus.onNext(isConnected);
-            }
-        });
-    }
+    //private static final String CHANNEL_Connect = "connect";
+    //private static final String CHANNEL_ConnectedStatus = "ConnectedStatus";
+    private static final String CHANNEL_BarcodeStatus = "BarcodeStatus";
+    //private static PublishSubject<Boolean> connectedStatus = PublishSubject.create();
+    private static PublishSubject<String> barcodeValue = PublishSubject.create();
 
     // This static function is optional and equivalent to onAttachedToEngine. It supports the old
     // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
@@ -75,27 +44,66 @@ public class BarcodePlugin implements FlutterPlugin, MethodCallHandler {
     // in the same class.
     public static void registerWith(Registrar registrar) {
         final MethodChannel channel = new MethodChannel(registrar.messenger(), "barcode_plugin");
-        initConnectedEvent(registrar.messenger());
         initReadEvent(registrar.messenger());
         channel.setMethodCallHandler(new BarcodePlugin());
-
         BarcodeHelper.getInstance().init(new BarcodeListener() {
             @Override
-            public void onRead(String tagsJson) {
-//                for (Map<String, Object> map : tagsList) {
-//                    String tag = TagKey.getTag(map);
-                if (tagsJson != null)
-                    tagsStatus.onNext(tagsJson);
-//                }
+            public void onResult(String id, String barcode, String count) {
+                if (barcode != null)
+                    barcodeValue.onNext(barcode);
+            }
+        });
+    }
+
+    private static void initReadEvent(BinaryMessenger messenger) {
+        final EventChannel scannerEventChannel = new EventChannel(messenger, CHANNEL_BarcodeStatus);
+        scannerEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object o, final EventChannel.EventSink eventSink) {
+                barcodeValue
+                        .subscribeOn(Schedulers.newThread())
+                        .observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(String barcode) {
+                        eventSink.success(barcode);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
             }
 
             @Override
-            public void onConnect(boolean isConnected, int powerLevel) {
-                connectedStatus.onNext(isConnected);
+            public void onCancel(Object o) {
+
             }
         });
+    }
 
-
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
+        final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "barcode_plugin");
+        initReadEvent(flutterPluginBinding.getBinaryMessenger());
+        channel.setMethodCallHandler(new BarcodePlugin());
+        BarcodeHelper.getInstance().init(new BarcodeListener() {
+            @Override
+            public void onResult(String id, String barcode, String count) {
+                if (barcode != null)
+                    barcodeValue.onNext(barcode);
+            }
+        });
     }
 
     @Override
@@ -108,122 +116,29 @@ public class BarcodePlugin implements FlutterPlugin, MethodCallHandler {
             case "getPlatformVersion":
                 result.success("Android " + android.os.Build.VERSION.RELEASE);
                 break;
-            case CHANNEL_IsStarted:
-                result.success(BarcodeHelper.getInstance().isStarted());
+            //case CHANNEL_Connect:
+              //  result.success(BarcodeHelper.getInstance().init());
+               // break;
+            case CHANNEL_ScanSingle:
+                BarcodeHelper.getInstance().scan(false);
+                result.success(true);
                 break;
-            case CHANNEL_Start:
-                BarcodeHelper.getInstance().start();
+            case CHANNEL_ScanContinuous:
+                BarcodeHelper.getInstance().scan(true);
+                result.success(true);
+                break;
+            case CHANNEL_ClearData:
+                BarcodeHelper.getInstance().clear();
                 result.success(true);
                 break;
             case CHANNEL_Stop:
                 BarcodeHelper.getInstance().stop();
                 result.success(true);
                 break;
-            case CHANNEL_ClearData:
-                BarcodeHelper.getInstance().clearData();
-                result.success(true);
-                break;
-            case CHANNEL_IsEmptyTags:
-                result.success(BarcodeHelper.getInstance().isEmptyTags());
-                break;
-            case CHANNEL_Close:
-                BarcodeHelper.getInstance().close();
-                result.success(true);
-                break;
-            case CHANNEL_Connect:
-                BarcodeHelper.getInstance().connect();
-                result.success(true);
-                break;
-            case CHANNEL_IsConnected:
-                result.success(BarcodeHelper.getInstance().isConnected());
-                break;
-            case CHANNEL_SETPOWERLEVEL:
-                String powerLevel = call.argument("value");
-                result.success(BarcodeHelper.getInstance().setPowerLevel(powerLevel));
-                break;
-            case CHANNEL_SETWORKAREA:
-                String workArea = call.argument("value");
-                result.success(BarcodeHelper.getInstance().setWorkArea(workArea));
-                break;
             default:
                 result.notImplemented();
         }
     }
-
-    private static void initConnectedEvent(BinaryMessenger messenger) {
-        final EventChannel scannerEventChannel = new EventChannel(messenger, CHANNEL_ConnectedStatus);
-        scannerEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object o, final EventChannel.EventSink eventSink) {
-                connectedStatus
-                        .subscribeOn(Schedulers.newThread())
-                        .observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Boolean>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(Boolean isConnected) {
-                        eventSink.success(isConnected);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onComplete() {
-
-                    }
-                });
-            }
-
-            @Override
-            public void onCancel(Object o) {
-
-            }
-        });
-    }
-
-    private static void initReadEvent(BinaryMessenger messenger) {
-        final EventChannel scannerEventChannel = new EventChannel(messenger, CHANNEL_TagsStatus);
-        scannerEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
-            @Override
-            public void onListen(Object o, final EventChannel.EventSink eventSink) {
-                tagsStatus
-                        .subscribeOn(Schedulers.newThread())
-                        .observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<String>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(String tag) {
-                        eventSink.success(tag);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onComplete() {
-
-                    }
-                });
-            }
-
-            @Override
-            public void onCancel(Object o) {
-
-            }
-        });
-    }
-
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {

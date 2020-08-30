@@ -1,9 +1,9 @@
 # barcode_plugin
 
-A flutter plugin for Tablet Alps ax6737 to read Barcode Cards.
+A flutter plugin for Tablet RT510 to read Barcode Cards.
 
 #### Library Pub link
-https://pub.dev/packages/barcode_plugin
+https://pub.dev/packages/barcode_rt510_plugin
 
 
 ### Getting Started
@@ -13,58 +13,37 @@ https://pub.dev/packages/barcode_plugin
     `packagingOptions {
         exclude 'lib/arm64-v8a/libflutter.so'
         exclude 'lib/arm64-v8a/libapp.so'
+         pickFirst 'lib/armeabi-v7a/libdevapi.so'//In case a library conflict with other libs
     }`
 
 - Import the library:
    `import 'package:barcode_rt510_plugin/barcode_rt510_plugin.dart';`
 
-- Open connection to the Barcode reader
+- Single Scan for the barcode
 
-    `await BarcodePlugin.connect`
-
-- Check if is the reader connected
-
-    `await BarcodePlugin.isConnected;`
-
-- Start reading data
-
-    `await BarcodePlugin.start;`
+    `await BarcodeRT510Plugin.scanSingle;`
     
-- Is started reading
+- Continuous Scan for the barcode
 
-   `await BarcodePlugin.isStarted;`
+   `await BarcodeRT510Plugin.scanContinuous;`
 
 - Stop Reading
 
-   `await BarcodePlugin.stop;`
-
-- Close the connection
-
-   `await BarcodePlugin.close;`
+   `await BarcodeRT510Plugin.stop;`
 
 - Clear cached data for the reader
 
-   `await BarcodePlugin.clearData;`
+   `await BarcodeRT510Plugin.clearData;`
 
-- Is Empty Tags
+- Listen to barcodes status
 
-   `await BarcodePlugin.isEmptyTags;`
-
-- Listen to connection status
-
-   `BarcodePlugin.connectedStatusStream.receiveBroadcastStream().listen(updateIsConnected);`
-   updateIsConnected should listen to bool value
-
-- Listen to tags status
-
-   `BarcodePlugin.tagsStatusStream.receiveBroadcastStream().listen(updateTags);`
+   `BarcodePlugin.barcodeStatusStream.receiveBroadcastStream().listen(updateBarcodes);`
    ```dart
-      List<TagEpc> _data = [];
-      void updateTags(dynamic result) {
+      List<String> _data = [];
+       void updateBarcodes(dynamic result) {
        setState(() {
-           _data = TagEpc.parseTags(result);
-        });
-      }
+      _data.add(result);
+      });
+  }
    ```
-![alt text](https://github.com/amorenew/barcode_rt510_plugin/raw/master/sample1.png)
 
